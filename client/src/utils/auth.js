@@ -1,5 +1,5 @@
 // Authentication Service Helper
-const auth = {
+export const auth = {
   getToken() {
     return localStorage.getItem('token');
   },
@@ -45,8 +45,12 @@ const auth = {
       headers
     };
 
+    // Support VITE_API_URL for production deployment (e.g. Render backend URL)
+    const apiBase = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+    const requestUrl = url.startsWith('http') ? url : `${apiBase}${url}`;
+
     try {
-      const response = await window.fetch(url, config);
+      const response = await window.fetch(requestUrl, config);
       
       if (response.status === 401) {
         this.logout();
@@ -55,7 +59,7 @@ const auth = {
       
       return await response.json();
     } catch (error) {
-      console.error(`API Fetch Error [${url}]:`, error);
+      console.error(`API Fetch Error [${requestUrl}]:`, error);
       throw error;
     }
   }

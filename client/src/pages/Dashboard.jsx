@@ -181,7 +181,8 @@ const Dashboard = () => {
 
   // Socket.IO Connection Setup
   useEffect(() => {
-    const socket = io();
+    const backendUrl = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '') || undefined;
+    const socket = io(backendUrl);
 
     socket.on('connect', () => {
       console.log('Socket.IO Dashboard Session Connected');

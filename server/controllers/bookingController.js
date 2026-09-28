@@ -4,6 +4,8 @@ const ParkingSlot = require('../models/ParkingSlot');
 const Notification = require('../models/Notification');
 const crypto = require('crypto');
 
+const User = require('../models/User');
+
 // Helper function to calculate price
 const calculatePrice = (startTime, endTime, lot, vehicleType) => {
   const start = new Date(startTime);
@@ -28,8 +30,8 @@ const calculatePrice = (startTime, endTime, lot, vehicleType) => {
     const hour = currentHourTime.getHours();
     
     // Parse peak hours config
-    const peakStart = parseInt(lot.peakStartHour.split(':')[0], 10);
-    const peakEnd = parseInt(lot.peakEndHour.split(':')[0], 10);
+    const peakStart = parseInt(lot.peakStartHour ? lot.peakStartHour.split(':')[0] : '17', 10);
+    const peakEnd = parseInt(lot.peakEndHour ? lot.peakEndHour.split(':')[0] : '21', 10);
     
     let isPeak = false;
     if (peakStart <= peakEnd) {
@@ -86,42 +88,93 @@ const createBooking = async (req, res) => {
     if (start >= end) {
       return res.status(400).json({ success: false, message: 'End time must be after start time' });
     }
-    if (start < new Date(Date.now() - 5 * 60 * 1000)) { // allow 5 mins tolerance
+    
+    // Allow up to 30 minutes tolerance for start time in the past (to prevent form-delay errors)
+    if (start < new Date(Date.now() - 30 * 60 * 1000)) {
       return res.status(400).json({ success: false, message: 'Start time cannot be in the past' });
     }
 
-    // 2. Overlap Booking Check
+    // Auto-expire stale pending bookings older than 15 minutes
+    await Booking.updateMany(
+      { status: 'pending', createdAt: { $lt: new Date(Date.now() - 15 * 60 * 1000) } },
+      { status: 'expired' }
+    );
+
+    // 2. Overlap Booking Check:
+    // Only check against confirmed/active bookings, or active pending bookings from OTHER users
     const overlappingBooking = await Booking.findOne({
       slotId,
-      status: { $in: ['confirmed', 'active', 'pending'] },
+      userId: { $ne: req.user._id },
       $or: [
-        { startTime: { $lt: end }, endTime: { $gt: start } }
+        { status: { $in: ['confirmed', 'active'] } },
+        { status: 'pending', createdAt: { $gt: new Date(Date.now() - 15 * 60 * 1000) } }
+      ],
+      $and: [
+        { startTime: { $lt: end } },
+        { endTime: { $gt: start } }
       ]
     });
 
     if (overlappingBooking) {
       return res.status(400).json({ 
         success: false, 
-        message: 'This slot is already booked or reserved for the selected time range' 
+        message: 'This slot is already booked or reserved by another driver for the selected time range' 
       });
     }
 
     // 3. Calculate Amount
-    const amount = calculatePrice(startTime, endTime, lot, vehicleType);
+    const amount = calculatePrice(start, end, lot, vehicleType || slot.vehicleType);
 
-    // 4. Create Booking in 'pending' status (waiting for payment)
-    const qrToken = crypto.randomBytes(24).toString('hex');
-    const booking = await Booking.create({
+    // 4. If the SAME user already has an unpaid pending booking for this slot, update & reuse it
+    let booking = await Booking.findOne({
       userId: req.user._id,
-      parkingLotId,
       slotId,
-      vehicleNumber,
-      startTime,
-      endTime,
-      amount,
-      status: 'pending',
-      qrToken
+      status: 'pending'
     });
+
+    if (booking) {
+      booking.parkingLotId = parkingLotId;
+      booking.vehicleNumber = vehicleNumber || booking.vehicleNumber;
+      booking.startTime = start;
+      booking.endTime = end;
+      booking.amount = amount;
+      if (!booking.qrToken) {
+        booking.qrToken = crypto.randomBytes(24).toString('hex');
+      }
+      await booking.save();
+    } else {
+      const qrToken = crypto.randomBytes(24).toString('hex');
+      booking = await Booking.create({
+        userId: req.user._id,
+        parkingLotId,
+        slotId,
+        vehicleNumber,
+        startTime: start,
+        endTime: end,
+        amount,
+        status: 'pending',
+        qrToken
+      });
+    }
+
+    // 5. Automatically ensure the vehicle is saved in user's profile if provided
+    if (vehicleNumber) {
+      try {
+        const currentUser = await User.findById(req.user._id);
+        if (currentUser) {
+          const hasVehicle = currentUser.vehicles && currentUser.vehicles.some(v => v.vehicleNumber === vehicleNumber);
+          if (!hasVehicle) {
+            currentUser.vehicles.push({ 
+              vehicleNumber, 
+              vehicleType: vehicleType || slot.vehicleType || 'car' 
+            });
+            await currentUser.save();
+          }
+        }
+      } catch(e) {
+        console.error('Error auto-saving vehicle:', e);
+      }
+    }
 
     res.status(201).json({ success: true, booking });
   } catch (error) {

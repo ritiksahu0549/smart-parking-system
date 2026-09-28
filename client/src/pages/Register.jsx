@@ -105,11 +105,8 @@ const Register = () => {
         });
       }
 
-      const response = await fetch('/api/auth/register', {
+      const data = await auth.fetch('/api/auth/register', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
         body: JSON.stringify({
           name: name.trim(),
           email: email.trim(),
@@ -119,8 +116,6 @@ const Register = () => {
           vehicles
         })
       });
-
-      const data = await response.json();
 
       if (data.success) {
         auth.login(data.token, data.user);
