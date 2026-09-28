@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ParkSmart India — Find. Book. Park. Go.</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    /* Homepage custom modifications */
+    .hero-search-container {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--card-radius);
+      padding: 16px;
+      margin-top: 30px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+      box-shadow: 0 10px 30px var(--shadow-color);
+    }
+    .hero-search-input {
+      flex: 1;
+      position: relative;
+      min-width: 250px;
+    }
+    .hero-search-input i {
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-secondary);
+    }
+    .hero-search-input input {
+      padding-left: 45px;
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      color: var(--text-primary);
+    }
+    .nearby-section {
+      padding: 80px 8%;
+      background: var(--bg-primary);
+    }
+    .nearby-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 30px;
+      margin-top: 40px;
+    }
+    .step-card {
+      text-align: center;
+      padding: 30px 20px;
+    }
+    .step-number {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--primary-color);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      margin: 0 auto 20px auto;
+    }
+    .review-card {
+      padding: 30px;
+    }
+    .review-user {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 20px;
+    }
+    .review-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--primary-color);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Landing Header / Navbar -->
+  <header class="landing-header">
+    <div class="logo">
+      <i class="fa-solid fa-square-p"></i>
+      <span>ParkSmart</span>
+    </div>
+    
+    <button class="mobile-nav-toggle" id="menu-toggle-btn" onclick="toggleMobileMenu()">
+      <i class="fa-solid fa-bars"></i>
+    </button>
+    
+    <ul class="nav-links" id="nav-links-list">
+      <li><a href="/">Home</a></li>
+      <li><a href="/dashboard">Find Parking</a></li>
+      <li><a href="/dashboard">My Bookings</a></li>
+      <li><a href="/dashboard">Notifications</a></li>
+      
+      <!-- Theme Switch Icon toggle -->
+      <li>
+        <button class="theme-toggle" id="theme-btn" onclick="toggleTheme()" title="Toggle Theme" style="margin: 0 10px;">
+          <i class="fa-solid fa-moon"></i>
+        </button>
+      </li>
+      
+      <!-- Auth Specific CTAs (filled via JS) -->
+      <li id="auth-buttons-container" style="display: flex; gap: 10px; align-items: center;">
+        <a href="/login" class="btn btn-secondary" style="padding: 8px 16px;">Login</a>
+        <a href="/register" class="btn btn-primary" style="padding: 8px 16px;">Register</a>
+      </li>
+    </ul>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero-section">
+    <div class="hero-content">
+      <div class="hero-tag">🚘 Modern City Parking booking Network</div>
+      <h1>Find a Parking Spot <span>Before You Reach There.</span></h1>
+      <p>Search parking anywhere in India, check availability and book your slot instantly.</p>
+      
+      <!-- Search Input Panel -->
+      <div class="hero-search-container">
+        <div class="hero-search-input">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input type="text" id="hero-search-query" class="form-control" placeholder="Search city, area or landmark (e.g. Indore, Vijay Nagar)...">
+        </div>
+        <button class="btn btn-secondary" onclick="triggerHeroLocation()" style="padding: 12px 18px;">
+          <i class="fa-solid fa-location-crosshairs"></i> Use My Location
+        </button>
+        <button class="btn btn-primary" onclick="triggerHeroSearch()" style="padding: 12px 24px;">Search</button>
+      </div>
+    </div>
+    
+    <div class="hero-image">
+      <div class="hero-img-container">
+        <div class="hero-img-mock">
+          <i class="fa-solid fa-car-tunnel"></i>
+          <h2 style="margin-top: 15px;">Smart Space Booking</h2>
+          <p style="color: var(--text-secondary); margin-top: 10px; font-size: 0.95rem;">Live Reservation Passes & Directions</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Nearby Parking Section -->
+  <section class="nearby-section" id="nearby-parking">
+    <div class="section-header">
+      <h2>Nearby Parking</h2>
+      <p>Instant booking inventory active across popular hubs.</p>
+    </div>
+    <div class="nearby-grid">
+      <!-- Card 1 -->
+      <div class="glass-card parking-lot-card">
+        <div style="position: relative; overflow: hidden; border-radius: 8px; height: 140px; margin-bottom: 14px; border: 1px solid var(--border-color);">
+          <img src="https://images.unsplash.com/photo-1506521781263-d8422e82f27a?auto=format&fit=crop&w=600&q=80" style="width: 100%; height: 100%; object-fit: cover;" alt="Parking Lot">
+        </div>
+        <div class="parking-lot-name">City Center Parking</div>
+        <div class="parking-lot-address"><i class="fa-solid fa-location-dot"></i> Vijay Nagar, Indore</div>
+        <div style="font-size: 0.85rem; color: var(--warning-color); margin-bottom: 10px;">
+          ⭐ ⭐ ⭐ ⭐ ⭐ <span style="color: var(--text-secondary); font-size: 0.8rem;">(4.6/5)</span>
+        </div>
+        <div class="parking-lot-stats">
+          <div class="lot-stat-item">
+            <span class="lot-stat-label">Available Slots</span>
+            <span class="lot-stat-value" style="color: var(--success-color);">
+              🟢 32 Slots Available
+            </span>
+          </div>
+          <div class="lot-stat-item">
+            <span class="lot-stat-label">Rate</span>
+            <span class="lot-stat-value" style="color: var(--primary-color);">₹30/hour</span>
+          </div>
+        </div>
+        <a href="/dashboard" class="btn btn-primary" style="width: 100%; margin-top: auto;">
+          View Parking
+        </a>
+      </div>
+
+      <!-- Card 2 -->
+      <div class="glass-card parking-lot-card">
+        <div style="position: relative; overflow: hidden; border-radius: 8px; height: 140px; margin-bottom: 14px; border: 1px solid var(--border-color);">
+          <img src="https://images.unsplash.com/photo-1590674899484-d5640e854abe?auto=format&fit=crop&w=600&q=80" style="width: 100%; height: 100%; object-fit: cover;" alt="Parking Lot">
+        </div>
+        <div class="parking-lot-name">C21 Mall Parking</div>
+        <div class="parking-lot-address"><i class="fa-solid fa-location-dot"></i> A.B. Road, Indore</div>
+        <div style="font-size: 0.85rem; color: var(--warning-color); margin-bottom: 10px;">
+          ⭐ ⭐ ⭐ ⭐ ⭐ <span style="color: var(--text-secondary); font-size: 0.8rem;">(4.8/5)</span>
+        </div>
+        <div class="parking-lot-stats">
+          <div class="lot-stat-item">
+            <span class="lot-stat-label">Available Slots</span>
+            <span class="lot-stat-value" style="color: var(--success-color);">
+              🟢 15 Slots Available
+            </span>
+          </div>
+          <div class="lot-stat-item">
+            <span class="lot-stat-label">Rate</span>
+            <span class="lot-stat-value" style="color: var(--primary-color);">₹40/hour</span>
+          </div>
+        </div>
+        <a href="/dashboard" class="btn btn-primary" style="width: 100%; margin-top: auto;">
+          View Parking
+        </a>
+      </div>
+
+      <!-- Card 3 -->
+      <div class="glass-card parking-lot-card">
+        <div style="position: relative; overflow: hidden; border-radius: 8px; height: 140px; margin-bottom: 14px; border: 1px solid var(--border-color);">
+          <img src="https://images.unsplash.com/photo-1573348722427-f1d6819fdf98?auto=format&fit=crop&w=600&q=80" style="width: 100%; height: 100%; object-fit: cover;" alt="Parking Lot">
+        </div>
+        <div class="parking-lot-name">Airport Terminal Park</div>
+        <div class="parking-lot-address"><i class="fa-solid fa-location-dot"></i> Airport Area, Indore</div>
+        <div style="font-size: 0.85rem; color: var(--warning-color); margin-bottom: 10px;">
+          ⭐ ⭐ ⭐ ⭐ <span style="color: var(--text-secondary); font-size: 0.8rem;">(4.2/5)</span>
+        </div>
+        <div class="parking-lot-stats">
+          <div class="lot-stat-item">
+            <span class="lot-stat-label">Available Slots</span>
+            <span class="lot-stat-value" style="color: var(--danger-color);">
+              🔴 0 Slots Available
+            </span>
+          </div>
+          <div class="lot-stat-item">
+            <span class="lot-stat-label">Rate</span>
+            <span class="lot-stat-value" style="color: var(--primary-color);">₹50/hour</span>
+          </div>
+        </div>
+        <a href="/dashboard" class="btn btn-secondary" style="width: 100%; margin-top: auto;">
+          View Parking
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Popular Cities Section -->
+  <section class="features-section" style="background: var(--bg-secondary);">
+    <div class="section-header">
+      <h2>Popular Indian Cities</h2>
+      <p>Find spaces instantaneously in India's metropolitan hotspots.</p>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 20px; text-align: center;">
+      <div class="glass-card" style="padding: 16px; cursor: pointer;" onclick="searchCityMock('Indore')"><h4>Indore</h4></div>
+      <div class="glass-card" style="padding: 16px; cursor: pointer;" onclick="searchCityMock('Delhi NCR')"><h4>Delhi NCR</h4></div>
+      <div class="glass-card" style="padding: 16px; cursor: pointer;" onclick="searchCityMock('Mumbai')"><h4>Mumbai</h4></div>
+      <div class="glass-card" style="padding: 16px; cursor: pointer;" onclick="searchCityMock('Bengaluru')"><h4>Bengaluru</h4></div>
+      <div class="glass-card" style="padding: 16px; cursor: pointer;" onclick="searchCityMock('Pune')"><h4>Pune</h4></div>
+      <div class="glass-card" style="padding: 16px; cursor: pointer;" onclick="searchCityMock('Jaipur')"><h4>Jaipur</h4></div>
+      <div class="glass-card" style="padding: 16px; cursor: pointer;" onclick="searchCityMock('Bhopal')"><h4>Bhopal</h4></div>
+      <div class="glass-card" style="padding: 16px; cursor: pointer;" onclick="searchCityMock('Hyderabad')"><h4>Hyderabad</h4></div>
+    </div>
+  </section>
+
+  <!-- How It Works Section -->
+  <section class="features-section" style="background: var(--bg-primary);">
+    <div class="section-header">
+      <h2>How it Works</h2>
+      <p>Get parked in just four simple steps. Zero hassle, zero confusion.</p>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 30px;">
+      <div class="glass-card step-card">
+        <div class="step-number">1</div>
+        <h3>Search</h3>
+        <p style="color: var(--text-secondary); margin-top: 10px;">Select your desired destination city, area, or local landmark.</p>
+      </div>
+      <div class="glass-card step-card">
+        <div class="step-number">2</div>
+        <h3>Choose Spot</h3>
+        <p style="color: var(--text-secondary); margin-top: 10px;">Review real-time lot maps and select a preferred slot code.</p>
+      </div>
+      <div class="glass-card step-card">
+        <div class="step-number">3</div>
+        <h3>Pay Online</h3>
+        <p style="color: var(--text-secondary); margin-top: 10px;">Process digital sandbox payments securely using credit cards or UPI.</p>
+      </div>
+      <div class="glass-card step-card">
+        <div class="step-number">4</div>
+        <h3>Scan & Park</h3>
+        <p style="color: var(--text-secondary); margin-top: 10px;">Receive a QR receipt pass. Scan at the entry gate and pull in.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Why ParkSmart Section -->
+  <section id="features" class="features-section" style="background: var(--bg-secondary);">
+    <div class="section-header">
+      <h2>Why ParkSmart?</h2>
+      <p>Clean design optimized for driver convenience.</p>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card glass-card">
+        <div class="feature-icon"><i class="fa-solid fa-map-location-dot"></i></div>
+        <h3>Google Map View</h3>
+        <p>Interactive location markers help you route straight to your parking bay with step-by-step directions.</p>
+      </div>
+      <div class="feature-card glass-card">
+        <div class="feature-icon"><i class="fa-solid fa-credit-card"></i></div>
+        <h3>Simulated Razorpay</h3>
+        <p>Authorize sandbox payments instantly without entering long details. Fully validated on server databases.</p>
+      </div>
+      <div class="feature-card glass-card">
+        <div class="feature-icon"><i class="fa-solid fa-qrcode"></i></div>
+        <h3>Digital QR Pass</h3>
+        <p>No paper receipts. Your ticket contains a code scanned by gate operator to park vehicle instantly.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Customer Reviews Section -->
+  <section class="features-section" style="background: var(--bg-primary);">
+    <div class="section-header">
+      <h2>What Drivers Say</h2>
+      <p>Thousands of drivers save time and stress by pre-booking slots.</p>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 30px;">
+      <div class="glass-card review-card">
+        <p style="font-style: italic; color: var(--text-secondary);">"I used to spend 20 minutes finding parking near Vijay Nagar during peak hours. With ParkSmart, I book my spot beforehand and pull right in. Extremely convenient!"</p>
+        <div class="review-user">
+          <div class="review-avatar">A</div>
+          <div>
+            <h4 style="font-size: 0.95rem;">Abhishek Sharma</h4>
+            <span style="font-size: 0.75rem; color: var(--text-secondary);">Indore, MP</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="glass-card review-card">
+        <p style="font-style: italic; color: var(--text-secondary);">"Finding a charging slot for my EV was a major pain. Booking ev-marked spots here guarantees me an active plug when I arrive. Sandbox pay is fast!"</p>
+        <div class="review-user">
+          <div class="review-avatar">N</div>
+          <div>
+            <h4 style="font-size: 0.95rem;">Nisha Patel</h4>
+            <span style="font-size: 0.75rem; color: var(--text-secondary);">Bengaluru, KA</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <p>&copy; 2026 ParkSmart India. Premium parking Booking Dashboard. All Rights Reserved.</p>
+  </footer>
+
+  <div class="toast-container" id="toast-container"></div>
+
+  <script>
+    // Verify local storage login session
+    window.addEventListener('load', () => {
+      // Load current theme
+      const savedTheme = localStorage.getItem('theme') || 'dark';
+      if (savedTheme === 'light') {
+        document.body.classList.add('light-theme');
+        document.getElementById('theme-btn').innerHTML = '<i class="fa-solid fa-sun"></i>';
+      } else {
+        document.body.classList.remove('light-theme');
+        document.getElementById('theme-btn').innerHTML = '<i class="fa-solid fa-moon"></i>';
+      }
+
+      // Check user session
+      const token = localStorage.getItem('token');
+      const userStr = localStorage.getItem('user');
+      const authContainer = document.getElementById('auth-buttons-container');
+
+      if (token && userStr) {
+        const user = JSON.parse(userStr);
+        authContainer.innerHTML = `
+          <a href="/dashboard" class="btn btn-primary" style="padding: 8px 16px;"><i class="fa-solid fa-gauge"></i> Dashboard</a>
+          <button class="btn btn-secondary" onclick="handleLogout()" style="padding: 8px 16px;"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
+        `;
+      }
+    });
+
+    // Theme toggler
+    function toggleTheme() {
+      if (document.body.classList.contains('light-theme')) {
+        document.body.classList.remove('light-theme');
+        localStorage.setItem('theme', 'dark');
+        document.getElementById('theme-btn').innerHTML = '<i class="fa-solid fa-moon"></i>';
+      } else {
+        document.body.classList.add('light-theme');
+        localStorage.setItem('theme', 'light');
+        document.getElementById('theme-btn').innerHTML = '<i class="fa-solid fa-sun"></i>';
+      }
+    }
+
+    // Mobile nav toggle
+    function toggleMobileMenu() {
+      const links = document.getElementById('nav-links-list');
+      links.classList.toggle('active');
+      const btn = document.getElementById('menu-toggle-btn');
+      if (links.classList.contains('active')) {
+        btn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+      } else {
+        btn.innerHTML = '<i class="fa-solid fa-bars"></i>';
+      }
+    }
+
+    // Logout function
+    function handleLogout() {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.reload();
+    }
+
+    // Search query redirect helper
+    function triggerHeroSearch() {
+      const q = document.getElementById('hero-search-query').value.trim();
+      if (!q) {
+        showToast('Please type a search query first.', 'warning');
+        return;
+      }
+      localStorage.setItem('search_query_redirect', q);
+      window.location.href = '/dashboard';
+    }
+
+    function searchCityMock(city) {
+      localStorage.setItem('search_query_redirect', city);
+      window.location.href = '/dashboard';
+    }
+
+    // Use location redirect helper
+    function triggerHeroLocation() {
+      if (!navigator.geolocation) {
+        showToast('Geolocation is not supported by your browser.', 'danger');
+        return;
+      }
+      showToast('Acquiring coordinates...', 'info');
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          localStorage.setItem('user_coords_redirect', JSON.stringify({
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude
+          }));
+          window.location.href = '/dashboard';
+        },
+        (err) => {
+          showToast('Could not acquire location. Please search manually.', 'warning');
+        }
+      );
+    }
+
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = `toast toast-${type}`;
+      
+      let icon = 'fa-info-circle';
+      if (type === 'success') icon = 'fa-check-circle';
+      if (type === 'danger') icon = 'fa-exclamation-circle';
+      if (type === 'warning') icon = 'fa-exclamation-triangle';
+
+      toast.innerHTML = `
+        <i class="fa-solid ${icon}"></i>
+        <div class="toast-message">${message}</div>
+        <i class="fa-solid fa-xmark toast-close" onclick="this.parentElement.remove()"></i>
+      `;
+      container.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.remove();
+      }, 5000);
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ParkSmart India Portal</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- ChartJS CDN for reports -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- QRCode CDN for tickets -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <!-- Socket.IO Client -->
+  <script src="/socket.io/socket.io.js"></script>
+  <!-- Google Maps script will be dynamically loaded in app.js with the retrieved API key -->
+</head>
+<body>
+
+  <div class="dashboard-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-logo logo">
+        <i class="fa-solid fa-square-p"></i>
+        <span>ParkSmart India</span>
+      </div>
+
+      <!-- User Navigation -->
+      <ul class="sidebar-menu" id="user-menu" style="display: none;">
+        <li class="sidebar-menu-item active" id="menu-user-dash">
+          <a href="#" onclick="switchView('user-dash')"><i class="fa-solid fa-gauge"></i> Dashboard</a>
+        </li>
+        <li class="sidebar-menu-item" id="menu-find-parking">
+          <a href="#" onclick="switchView('find-parking')"><i class="fa-solid fa-magnifying-glass-location"></i> Find Parking</a>
+        </li>
+        <li class="sidebar-menu-item" id="menu-user-bookings">
+          <a href="#" onclick="switchView('user-bookings')"><i class="fa-solid fa-calendar-check"></i> My Bookings</a>
+        </li>
+        <li class="sidebar-menu-item" id="menu-payment-history">
+          <a href="#" onclick="switchView('payment-history')"><i class="fa-solid fa-receipt"></i> Payment History</a>
+        </li>
+        <li class="sidebar-menu-item" id="menu-user-profile">
+          <a href="#" onclick="switchView('user-profile')"><i class="fa-solid fa-user-gear"></i> Vehicle & Profile</a>
+        </li>
+        <li class="sidebar-menu-item" id="menu-notifications">
+          <a href="#" onclick="switchView('notifications')"><i class="fa-solid fa-bell"></i> Notifications</a>
+        </li>
+      </ul>
+
+      <!-- Admin Navigation -->
+      <ul class="sidebar-menu" id="admin-menu" style="display: none;">
+        <li class="sidebar-menu-item active" id="menu-admin-dash">
+          <a href="#" onclick="switchView('admin-dash')"><i class="fa-solid fa-chart-pie"></i> Admin Analytics</a>
+        </li>
+        <li class="sidebar-menu-item" id="menu-admin-parking">
+          <a href="#" onclick="switchView('admin-parking')"><i class="fa-solid fa-parking"></i> Lot Management</a>
+        </li>
+        <li class="sidebar-menu-item" id="menu-admin-bookings">
+          <a href="#" onclick="switchView('admin-bookings')"><i class="fa-solid fa-book-open"></i> All Bookings</a>
+        </li>
+        <li class="sidebar-menu-item" id="menu-admin-users">
+          <a href="#" onclick="switchView('admin-users')"><i class="fa-solid fa-users-gear"></i> User Management</a>
+        </li>
+        <li class="sidebar-menu-item" id="menu-admin-entry-exit">
+          <a href="#" onclick="switchView('admin-entry-exit')"><i class="fa-solid fa-ticket"></i> Entry/Exit Gate</a>
+        </li>
+        <li class="sidebar-menu-item" id="menu-admin-iot">
+          <a href="#" onclick="switchView('admin-iot')"><i class="fa-solid fa-microchip"></i> IoT Simulator</a>
+        </li>
+        <li class="sidebar-menu-item" id="menu-admin-payments">
+          <a href="#" onclick="switchView('admin-payments')"><i class="fa-solid fa-money-bill-transfer"></i> Payments Log</a>
+        </li>
+      </ul>
+
+      <div class="sidebar-footer">
+        <div class="user-profile-summary">
+          <div class="user-avatar" id="sidebar-avatar">U</div>
+          <div class="user-details-summary">
+            <div class="user-name-summary" id="sidebar-username">User Name</div>
+            <div class="user-role-summary" id="sidebar-userrole">Role</div>
+          </div>
+        </div>
+        <button class="btn btn-secondary" onclick="auth.logout()" style="width: 100%;">
+          <i class="fa-solid fa-right-from-bracket"></i> Log Out
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Workspace -->
+    <div class="main-wrapper">
+      <!-- Topbar -->
+      <header class="topbar">
+        <div class="topbar-title">
+          <h2 id="page-title">Dashboard</h2>
+        </div>
+        <div class="topbar-actions">
+          <button class="theme-toggle" id="theme-btn" onclick="toggleTheme()" title="Toggle Light/Dark Theme" style="margin-right: 10px;">
+            <i class="fa-solid fa-moon"></i>
+          </button>
+          <div class="notification-bell" onclick="switchView(getUserRole() === 'admin' ? 'admin-dash' : 'notifications')" style="margin-right: 10px; display: inline-block; vertical-align: middle;">
+            <i class="fa-solid fa-bell"></i>
+            <span class="notification-badge" id="nav-notification-badge" style="display: none;">0</span>
+          </div>
+          <div style="font-weight: 500; display: inline-block; vertical-align: middle;" id="header-welcome">Welcome!</div>
+        </div>
+      </header>
+
+      <!-- Content Panels -->
+      <main class="content-body">
+
+        <!-- ==================== USER VIEW: DASHBOARD ==================== -->
+        <section class="view-panel active-view" id="view-user-dash">
+          <div class="stats-grid">
+            <div class="stat-card glass-card">
+              <div class="stat-info">
+                <h3 id="ud-stat-available">0</h3>
+                <p>Available Parking Lots</p>
+              </div>
+              <div class="stat-icon primary"><i class="fa-solid fa-square-p"></i></div>
+            </div>
+            <div class="stat-card glass-card">
+              <div class="stat-info">
+                <h3 id="ud-stat-active">0</h3>
+                <p>Active Bookings</p>
+              </div>
+              <div class="stat-icon success"><i class="fa-solid fa-circle-check"></i></div>
+            </div>
+            <div class="stat-card glass-card">
+              <div class="stat-info">
+                <h3 id="ud-stat-total">0</h3>
+                <p>Total Bookings</p>
+              </div>
+              <div class="stat-icon warning"><i class="fa-solid fa-history"></i></div>
+            </div>
+            <div class="stat-card glass-card">
+              <div class="stat-info">
+                <h3 id="ud-stat-spent">₹0</h3>
+                <p>Total Spent</p>
+              </div>
+              <div class="stat-icon danger"><i class="fa-solid fa-indian-rupee-sign"></i></div>
+            </div>
+          </div>
+
+          <div class="dashboard-row">
+            <!-- Active Booking details -->
+            <div class="glass-card">
+              <h3>Active/Confirmed Parking Ticket</h3>
+              <div id="ud-active-booking-content" style="margin-top: 20px;">
+                <!-- Filled dynamically by app.js -->
+                <p class="text-secondary">No active bookings. Book a spot to see your ticket here.</p>
+              </div>
+            </div>
+            <!-- Nearby / Available Lots list -->
+            <div class="glass-card">
+              <h3>Quick Status</h3>
+              <div id="ud-quick-lots" style="margin-top: 20px;">
+                <!-- Filled dynamically by app.js -->
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== USER VIEW: FIND PARKING ==================== -->
+        <section class="view-panel" id="view-find-parking">
+          <div class="search-bar-row">
+            <div class="search-input-wrapper">
+              <i class="fa-solid fa-magnifying-glass search-main-icon"></i>
+              <input type="text" id="parking-search-query" class="form-control" placeholder="Search by city, area, landmark, or mall...">
+              <!-- Autocomplete Suggestion List dropdown -->
+              <div id="autocomplete-suggestions" class="autocomplete-dropdown" style="display: none;"></div>
+            </div>
+            <button class="btn btn-secondary" onclick="useMyLocation()">
+              <i class="fa-solid fa-location-crosshairs"></i> Use My Location
+            </button>
+            <button class="btn btn-primary" onclick="searchParkingLots()">Search</button>
+          </div>
+
+          <!-- Google Map Container -->
+          <div id="google-map" style="width: 100%; height: 380px; border-radius: 16px; border: 1px solid var(--border-color); margin-bottom: 24px; background: var(--bg-secondary); display: flex; align-items: center; justify-content: center; position: relative;">
+            <p class="text-secondary" id="map-loading-text"><i class="fa-solid fa-spinner fa-spin"></i> Initializing Google Maps API...</p>
+          </div>
+
+          <div class="parking-lots-grid" id="parking-lots-container">
+            <!-- Filled dynamically by app.js -->
+          </div>
+        </section>
+
+        <!-- ==================== USER VIEW: LIVE SLOTS & BOOKING ==================== -->
+        <section class="view-panel" id="view-live-slots">
+          <div class="glass-card" style="margin-bottom: 24px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+              <div>
+                <h2 id="slot-view-lot-name">Parking Lot Slots</h2>
+                <p id="slot-view-lot-address" style="color: var(--text-secondary);"></p>
+              </div>
+              <div style="display: flex; gap: 10px;">
+                <button class="btn btn-secondary" id="slot-view-directions-btn" onclick="getDirectionsAction()">
+                  <i class="fa-solid fa-map-location-dot"></i> Get Directions
+                </button>
+                <button class="btn btn-secondary" onclick="switchView('find-parking')">
+                  <i class="fa-solid fa-arrow-left"></i> Back
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="booking-split-container">
+            <!-- Slots Layout grid -->
+            <div class="glass-card">
+              <h3>Choose Parking Slot</h3>
+              <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 16px;">
+                🟢 Available &nbsp;&nbsp; 🟡 Reserved &nbsp;&nbsp; 🔴 Occupied &nbsp;&nbsp; ⚫ Maintenance
+              </p>
+              
+              <!-- Slots Grid -->
+              <div class="slots-grid" id="live-slots-grid">
+                <!-- Autogenerated slots -->
+              </div>
+            </div>
+
+            <!-- Booking form -->
+            <div class="glass-card" id="booking-form-card">
+              <h3>Reservation Details</h3>
+              <form id="slot-booking-form" onsubmit="submitBooking(event)" style="margin-top: 20px;">
+                <div class="form-group">
+                  <label>Selected Slot</label>
+                  <input type="text" id="book-slot-number" class="form-control" readonly placeholder="Select a slot from layout" required>
+                  <input type="hidden" id="book-slot-id">
+                </div>
+
+                <div class="form-group">
+                  <label>Select Vehicle</label>
+                  <select id="book-vehicle-select" class="form-control" required>
+                    <!-- User vehicles list -->
+                  </select>
+                  <p style="font-size: 0.8rem; margin-top: 6px; color: var(--text-secondary);">
+                    No vehicle? <a href="#" style="color: var(--primary-color);" onclick="switchView('user-profile')">Add vehicle in Profile</a>
+                  </p>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>Start Date & Time</label>
+                    <input type="datetime-local" id="book-start-time" class="form-control" required onchange="estimatePrice()">
+                  </div>
+                  <div class="form-group">
+                    <label>End Date & Time</label>
+                    <input type="datetime-local" id="book-end-time" class="form-control" required onchange="estimatePrice()">
+                  </div>
+                </div>
+
+                <div class="glass-card" style="background: var(--bg-primary); margin-bottom: 20px; padding: 16px; border: 1px solid var(--border-color);">
+                  <div style="display: flex; justify-content: space-between; font-weight: 600;">
+                    <span>Estimated Amount:</span>
+                    <span id="book-price-estimate" style="color: var(--primary-color); font-size: 1.2rem;">₹0</span>
+                  </div>
+                  <p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 6px;">
+                    Peak hour slots calculate higher rates surges dynamically.
+                  </p>
+                </div>
+
+                <button class="btn btn-success" type="submit" style="width: 100%;">
+                  Confirm & Pay <i class="fa-solid fa-credit-card"></i>
+                </button>
+              </form>
+            </div>
+          </div>
+
+          <!-- Reviews & Ratings Panel -->
+          <div class="glass-card" style="margin-top: 30px;">
+            <h3>Reviews & Ratings</h3>
+            <div id="reviews-list-container" style="margin-top: 16px; display: flex; flex-direction: column; gap: 16px;">
+              <!-- Dynamic comments -->
+            </div>
+            
+            <form id="add-review-form" onsubmit="submitReview(event)" style="margin-top: 24px; border-top: 1px solid var(--border-color); padding-top: 20px;">
+              <h4 style="margin-bottom: 12px;">Share Your Experience</h4>
+              <div class="form-group">
+                <label>Rating</label>
+                <select id="review-rating" class="form-control" style="max-width: 200px;">
+                  <option value="5">⭐⭐⭐⭐⭐ (5/5)</option>
+                  <option value="4">⭐⭐⭐⭐ (4/5)</option>
+                  <option value="3">⭐⭐⭐ (3/5)</option>
+                  <option value="2">⭐⭐ (2/5)</option>
+                  <option value="1">⭐ (1/5)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Comment</label>
+                <textarea id="review-comment" class="form-control" rows="3" placeholder="Tell us how the booking and parking experience went..." required style="resize: none;"></textarea>
+                <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 6px;">
+                  Note: You must have a completed booking at this lot to post a review.
+                </p>
+              </div>
+              <button class="btn btn-primary" type="submit">Submit Review</button>
+            </form>
+          </div>
+        </section>
+
+        <!-- ==================== USER VIEW: MY BOOKINGS ==================== -->
+        <section class="view-panel" id="view-user-bookings">
+          <div class="glass-card">
+            <h3>Booking History</h3>
+            <div class="table-container">
+              <table class="custom-table">
+                <thead>
+                  <tr>
+                    <th>Booking ID</th>
+                    <th>Parking</th>
+                    <th>Slot</th>
+                    <th>Vehicle</th>
+                    <th>Start Date/Time</th>
+                    <th>End Date/Time</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="user-bookings-table-body">
+                  <!-- Dynamic rows -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== USER VIEW: PAYMENT HISTORY ==================== -->
+        <section class="view-panel" id="view-payment-history">
+          <div class="glass-card">
+            <h3>Payments Log</h3>
+            <div class="table-container">
+              <table class="custom-table">
+                <thead>
+                  <tr>
+                    <th>Transaction ID</th>
+                    <th>Booking ID</th>
+                    <th>Amount</th>
+                    <th>Paid Date</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="user-payments-table-body">
+                  <!-- Dynamic rows -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== USER VIEW: USER PROFILE ==================== -->
+        <section class="view-panel" id="view-user-profile">
+          <div class="booking-split-container">
+            <!-- Profile Info edit -->
+            <div class="glass-card">
+              <h3>Account Profile</h3>
+              <form id="profile-edit-form" onsubmit="updateProfileInfo(event)" style="margin-top: 20px;">
+                <div class="form-group">
+                  <label>Full Name</label>
+                  <input type="text" id="profile-name" class="form-control" required>
+                </div>
+                <div class="form-group">
+                  <label>Email Address</label>
+                  <input type="email" id="profile-email" class="form-control" disabled>
+                </div>
+                <div class="form-group">
+                  <label>Phone Number</label>
+                  <input type="tel" id="profile-phone" class="form-control" required>
+                </div>
+                <button class="btn btn-primary" type="submit">Save Profile</button>
+              </form>
+            </div>
+
+            <!-- Vehicles Manager -->
+            <div class="glass-card">
+              <h3>Manage Vehicles</h3>
+              <form id="vehicle-add-form" onsubmit="addNewVehicle(event)" style="margin-top: 20px; margin-bottom: 24px;">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>Vehicle Number</label>
+                    <input type="text" id="new-vehicle-num" class="form-control" placeholder="DL-3C-AB-1234" required>
+                  </div>
+                  <div class="form-group">
+                    <label>Vehicle Type</label>
+                    <select id="new-vehicle-type" class="form-control">
+                      <option value="car">Car</option>
+                      <option value="bike">Bike (Two-wheeler)</option>
+                      <option value="ev">Electric Car (EV)</option>
+                      <option value="disabled">Disabled Vehicle</option>
+                    </select>
+                  </div>
+                </div>
+                <button class="btn btn-success" type="submit" style="width: 100%;">Add Vehicle</button>
+              </form>
+
+              <h4>Registered Vehicles</h4>
+              <div id="vehicles-list-container" style="margin-top: 14px;">
+                <!-- Filled dynamically by app.js -->
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== USER VIEW: NOTIFICATIONS ==================== -->
+        <section class="view-panel" id="view-notifications">
+          <div class="glass-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+              <h3>My Notifications</h3>
+              <button class="btn btn-secondary btn-sm" onclick="markAllNotificationsRead()">Mark all as read</button>
+            </div>
+            <div id="notifications-list-container">
+              <!-- List -->
+            </div>
+          </div>
+        </section>
+
+
+        <!-- ==================== ADMIN VIEW: ANALYTICS ==================== -->
+        <section class="view-panel" id="view-admin-dash">
+          <div class="stats-grid">
+            <div class="stat-card glass-card">
+              <div class="stat-info">
+                <h3 id="ad-stat-lots">0</h3>
+                <p>Total Lots</p>
+              </div>
+              <div class="stat-icon primary"><i class="fa-solid fa-parking"></i></div>
+            </div>
+            <div class="stat-card glass-card">
+              <div class="stat-info">
+                <h3 id="ad-stat-slots">0 / 0</h3>
+                <p>Slots Available</p>
+              </div>
+              <div class="stat-icon success"><i class="fa-solid fa-circle-check"></i></div>
+            </div>
+            <div class="stat-card glass-card">
+              <div class="stat-info">
+                <h3 id="ad-stat-bookings">0</h3>
+                <p>Today's Bookings</p>
+              </div>
+              <div class="stat-icon warning"><i class="fa-solid fa-calendar-day"></i></div>
+            </div>
+            <div class="stat-card glass-card">
+              <div class="stat-info">
+                <h3 id="ad-stat-revenue">₹0</h3>
+                <p>Today's Revenue</p>
+              </div>
+              <div class="stat-icon danger"><i class="fa-solid fa-indian-rupee-sign"></i></div>
+            </div>
+          </div>
+
+          <div class="charts-wrapper">
+            <div class="glass-card chart-card">
+              <h3>Occupancy Rate & Status Counts</h3>
+              <div style="height: 250px; display: flex; align-items: center; justify-content: center; position: relative;">
+                <canvas id="occupancyPieChart"></canvas>
+              </div>
+            </div>
+            <div class="glass-card chart-card">
+              <h3>Weekly Revenue (Last 7 Days)</h3>
+              <div style="height: 250px; display: flex; align-items: center; justify-content: center; position: relative;">
+                <canvas id="revenueBarChart"></canvas>
+              </div>
+            </div>
+          </div>
+          
+          <div class="glass-card chart-card" style="margin-top: 24px;">
+            <h3>Peak Parking Hours Distribution</h3>
+            <div style="height: 250px; display: flex; align-items: center; justify-content: center; position: relative;">
+              <canvas id="peakHoursLineChart"></canvas>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== ADMIN VIEW: LOT MANAGEMENT ==================== -->
+        <section class="view-panel" id="view-admin-parking">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+            <h3>Parking Locations</h3>
+            <button class="btn btn-primary" onclick="openAddLotModal()">
+              <i class="fa-solid fa-plus"></i> Add Parking Lot
+            </button>
+          </div>
+
+          <div class="glass-card">
+            <div class="table-container">
+              <table class="custom-table">
+                <thead>
+                  <tr>
+                    <th>Lot Name</th>
+                    <th>City</th>
+                    <th>Address</th>
+                    <th>Base Price</th>
+                    <th>Peak Price</th>
+                    <th>Total Slots</th>
+                    <th>Opening Time</th>
+                    <th>Closing Time</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-lots-table-body">
+                  <!-- Dynamic rows -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== ADMIN VIEW: ALL BOOKINGS ==================== -->
+        <section class="view-panel" id="view-admin-bookings">
+          <div class="glass-card">
+            <h3>Manage Bookings</h3>
+            <div class="table-container">
+              <table class="custom-table">
+                <thead>
+                  <tr>
+                    <th>Booking ID</th>
+                    <th>Customer</th>
+                    <th>Parking Lot</th>
+                    <th>Slot</th>
+                    <th>Vehicle No</th>
+                    <th>Time Range</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-bookings-table-body">
+                  <!-- Dynamic rows -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== ADMIN VIEW: USER MANAGEMENT ==================== -->
+        <section class="view-panel" id="view-admin-users">
+          <div class="glass-card">
+            <h3>System Users</h3>
+            <div class="table-container">
+              <table class="custom-table">
+                <thead>
+                  <tr>
+                    <th>User ID</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Role</th>
+                    <th>Registered Vehicles</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-users-table-body">
+                  <!-- Dynamic rows -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== ADMIN VIEW: ENTRY/EXIT GATE ==================== -->
+        <section class="view-panel" id="view-admin-entry-exit">
+          <div class="booking-split-container">
+            <!-- Scan / Enter Gate Verification -->
+            <div class="glass-card">
+              <h3>QR Scanner Simulator (Entry Gateway)</h3>
+              <form id="entry-verify-form" onsubmit="verifyQREntry(event)" style="margin-top: 20px;">
+                <div class="form-group">
+                  <label>Enter QR Security Token</label>
+                  <input type="text" id="gate-qr-token" class="form-control" placeholder="Paste booking qrToken here..." required>
+                </div>
+                <button class="btn btn-primary" type="submit" style="width: 100%;">
+                  Scan & Verify Entry <i class="fa-solid fa-car-on"></i>
+                </button>
+              </form>
+
+              <div id="entry-gate-status" style="margin-top: 24px;">
+                <!-- Scan results visual badge -->
+              </div>
+            </div>
+
+            <!-- Exit Gate Verification -->
+            <div class="glass-card">
+              <h3>Exit Gate Control</h3>
+              <p style="color: var(--text-secondary); margin-bottom: 20px;">Select an active parking session to complete the vehicle exit flow.</p>
+              
+              <div class="table-container">
+                <table class="custom-table">
+                  <thead>
+                    <tr>
+                      <th>Slot</th>
+                      <th>Vehicle</th>
+                      <th>Lot</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="gate-exit-table-body">
+                    <!-- Dynamic active booking list -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== ADMIN VIEW: IOT SIMULATOR ==================== -->
+        <section class="view-panel" id="view-admin-iot">
+          <div class="glass-card" style="margin-bottom: 24px;">
+            <label>Select Parking Lot to Simulate:</label>
+            <select id="iot-lot-select" class="form-control" onchange="loadIotSlots()" style="margin-top: 8px;">
+              <!-- Dynamic Lot Options -->
+            </select>
+          </div>
+
+          <div class="glass-card">
+            <h3>IoT Sensor Simulator Panel</h3>
+            <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 6px;">
+              Simulate sensor triggers from parking spots. Emits Socket.IO messages instantly which update user layouts.
+            </p>
+
+            <div class="iot-slots-layout" id="iot-slots-container">
+              <!-- Slots grids with Vehicle Detected / Vehicle Cleared buttons -->
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== ADMIN VIEW: PAYMENTS LOG ==================== -->
+        <section class="view-panel" id="view-admin-payments">
+          <div class="glass-card">
+            <h3>Payments Transaction Log</h3>
+            <div class="table-container">
+              <table class="custom-table">
+                <thead>
+                  <tr>
+                    <th>Transaction ID</th>
+                    <th>Booking ID</th>
+                    <th>Customer Name</th>
+                    <th>Parking Lot</th>
+                    <th>Amount</th>
+                    <th>Date Paid</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-payments-table-body">
+                  <!-- Dynamic rows -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+
+  <!-- ADD/EDIT PARKING LOT MODAL (ADMIN ONLY) -->
+  <div class="modal-overlay" id="parking-lot-modal">
+    <div class="modal-content glass-card">
+      <i class="fa-solid fa-xmark modal-close" onclick="closeModal('parking-lot-modal')"></i>
+      <h3 id="lot-modal-title" style="margin-bottom: 20px;">Add Parking Lot</h3>
+      
+      <form id="parking-lot-form" onsubmit="saveParkingLot(event)">
+        <input type="hidden" id="lot-form-id">
+        <div class="form-group">
+          <label>Parking Lot Name</label>
+          <input type="text" id="lot-name" class="form-control" required placeholder="City Center Mall">
+        </div>
+        <div class="form-group">
+          <label>Street Address</label>
+          <input type="text" id="lot-address" class="form-control" required placeholder="Sector 18, Block G">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>City</label>
+            <input type="text" id="lot-city" class="form-control" required placeholder="Noida">
+          </div>
+          <div class="form-group">
+            <label>State</label>
+            <input type="text" id="lot-state" class="form-control" required placeholder="Uttar Pradesh">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Pincode</label>
+            <input type="text" id="lot-pincode" class="form-control" required placeholder="201301">
+          </div>
+          <div class="form-group">
+            <label>Total Slot Count</label>
+            <input type="number" id="lot-totalslots" class="form-control" required placeholder="20" min="1">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Latitude (Coords)</label>
+            <input type="number" step="any" id="lot-lat" class="form-control" required placeholder="28.5708">
+          </div>
+          <div class="form-group">
+            <label>Longitude (Coords)</label>
+            <input type="number" step="any" id="lot-lng" class="form-control" required placeholder="77.3261">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Base Price per Hour (₹)</label>
+            <input type="number" id="lot-baseprice" class="form-control" required placeholder="20" min="1">
+          </div>
+          <div class="form-group">
+            <label>Peak Price per Hour (₹)</label>
+            <input type="number" id="lot-peakprice" class="form-control" required placeholder="40" min="1">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Peak Start Hour</label>
+            <input type="text" id="lot-peakstart" class="form-control" required placeholder="17:00">
+          </div>
+          <div class="form-group">
+            <label>Peak End Hour</label>
+            <input type="text" id="lot-peakend" class="form-control" required placeholder="21:00">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Opening Time</label>
+            <input type="text" id="lot-opening" class="form-control" required placeholder="08:00">
+          </div>
+          <div class="form-group">
+            <label>Closing Time</label>
+            <input type="text" id="lot-closing" class="form-control" required placeholder="23:30">
+          </div>
+        </div>
+        <button class="btn btn-primary" type="submit" style="width: 100%; margin-top: 10px;">Save Location</button>
+      </form>
+    </div>
+  </div>
+
+
+  <!-- RAZORPAY SIMULATED CHECKOUT MODAL -->
+  <div class="modal-overlay" id="razorpay-mock-modal">
+    <div class="modal-content glass-card" style="max-width: 420px; border-color: #3b82f6;">
+      <h3 style="text-align: center; color: #3b82f6;"><i class="fa-solid fa-wallet"></i> razorpay <span style="font-weight: normal; font-size: 0.8rem; background: rgba(59, 130, 246, 0.15); padding: 2px 8px; border-radius: 4px;">sandbox</span></h3>
+      <p style="text-align: center; font-size: 0.85rem; color: var(--text-secondary); margin-top: 4px;">Mock Payment Portal Verification</p>
+      
+      <div style="background: var(--bg-primary); border-radius: 10px; padding: 20px; margin: 20px 0; text-align: center; border: 1px solid var(--border-color);">
+        <p class="text-secondary" style="font-size: 0.85rem;">Booking Charge</p>
+        <h2 id="rzp-modal-amount" style="font-size: 2.2rem; color: #fff;">₹0.00</h2>
+        <p id="rzp-modal-details" style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 10px;">Booking Ref: 000</p>
+      </div>
+
+      <div class="form-group">
+        <label>Payment Mode Selection</label>
+        <select class="form-control" id="rzp-mock-status">
+          <option value="success">Success (Authorize Transaction)</option>
+          <option value="failed">Failed (Decline Transaction)</option>
+        </select>
+      </div>
+
+      <div class="form-row">
+        <button class="btn btn-secondary" onclick="closeModal('razorpay-mock-modal')">Cancel</button>
+        <button class="btn btn-primary" id="rzp-pay-button" style="background: #3b82f6; box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);">Process Payment</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- VIEW TICKET MODAL -->
+  <div class="modal-overlay" id="ticket-modal">
+    <div class="modal-content" style="background: transparent; box-shadow: none; max-width: 400px;">
+      <i class="fa-solid fa-xmark modal-close" onclick="closeModal('ticket-modal')" style="top: -30px; right: 0; color: #fff; font-size: 1.8rem;"></i>
+      
+      <div class="ticket-wrapper">
+        <div class="ticket-card">
+          <div class="ticket-header">
+            <h3 id="ticket-lot-name">Tech Park Parking</h3>
+            <p>Parking Receipt Ticket</p>
+          </div>
+          <div style="margin-top: 20px;">
+            <div class="ticket-info-row">
+              <span class="ticket-label">Customer Name:</span>
+              <span class="ticket-value" id="ticket-user-name">User Name</span>
+            </div>
+            <div class="ticket-info-row">
+              <span class="ticket-label">Slot Assigned:</span>
+              <span class="ticket-value" id="ticket-slot-num" style="color: var(--success-color); font-weight: 700;">S-02</span>
+            </div>
+            <div class="ticket-info-row">
+              <span class="ticket-label">Vehicle Plate:</span>
+              <span class="ticket-value" id="ticket-vehicle-num">DL-3C-AS-1234</span>
+            </div>
+            <div class="ticket-info-row">
+              <span class="ticket-label">Booking Range:</span>
+              <span class="ticket-value" id="ticket-time-range" style="font-size: 0.8rem;">23 Aug, 10:00 - 12:00</span>
+            </div>
+            <div class="ticket-info-row">
+              <span class="ticket-label">Total Paid:</span>
+              <span class="ticket-value" id="ticket-amount">₹40.00</span>
+            </div>
+            <div class="ticket-info-row">
+              <span class="ticket-label">Booking Status:</span>
+              <span class="ticket-value" id="ticket-status">CONFIRMED</span>
+            </div>
+          </div>
+          
+          <div class="ticket-qr-container">
+            <div id="qrcode"></div>
+            <p style="color: #6b7280; font-size: 0.65rem; margin-top: 10px; text-align: center; text-transform: uppercase;" id="ticket-qr-label">Token Code</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Load Dashboard logic -->
+  <script src="/js/auth.js"></script>
+  <script src="/js/socket.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+</html>

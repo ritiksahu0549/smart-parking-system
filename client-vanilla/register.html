@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register | ParkSmart India</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .auth-page-container {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+      position: relative;
+      background: radial-gradient(circle at 80% 20%, rgba(99, 102, 241, 0.1) 0%, transparent 50%);
+    }
+    .auth-theme-toggle {
+      position: absolute;
+      top: 30px;
+      right: 30px;
+    }
+    .auth-card {
+      width: 100%;
+      max-width: 480px;
+    }
+    .auth-header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .auth-header .logo {
+      justify-content: center;
+      margin-bottom: 12px;
+    }
+    .auth-header p {
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+    }
+    .validation-msg {
+      display: none;
+      font-size: 0.85rem;
+      color: var(--danger-color);
+      margin-top: 5px;
+    }
+    .form-group.has-error .form-control {
+      border-color: var(--danger-color);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="auth-page-container">
+    <!-- Theme Toggle Switcher -->
+    <div class="auth-theme-toggle">
+      <button class="theme-toggle" id="theme-btn" onclick="toggleTheme()" title="Toggle Light/Dark Theme">
+        <i class="fa-solid fa-moon"></i>
+      </button>
+    </div>
+
+    <!-- Registration Card -->
+    <div class="auth-card glass-card">
+      <div class="auth-header">
+        <div class="logo">
+          <i class="fa-solid fa-square-p"></i>
+          <span>ParkSmart India</span>
+        </div>
+        <h3>Create Your Account</h3>
+        <p>Book parking slots instantly anywhere in India</p>
+      </div>
+
+      <form id="register-form" onsubmit="handleRegistrationSubmit(event)" novalidate>
+        <div class="form-group" id="group-name">
+          <label for="reg-name">Full Name</label>
+          <input type="text" id="reg-name" class="form-control" placeholder="Rohan Sharma" required autocomplete="name">
+          <div class="validation-msg" id="err-name">Please enter your name</div>
+        </div>
+
+        <div class="form-group" id="group-email">
+          <label for="reg-email">Email Address</label>
+          <input type="email" id="reg-email" class="form-control" placeholder="rohan@example.com" required autocomplete="email">
+          <div class="validation-msg" id="err-email">Please enter a valid email address</div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group" id="group-phone">
+            <label for="reg-phone">Mobile Number</label>
+            <input type="tel" id="reg-phone" class="form-control" placeholder="9876543210" required autocomplete="tel">
+            <div class="validation-msg" id="err-phone">Please enter a valid 10-digit number</div>
+          </div>
+          <div class="form-group">
+            <label for="reg-role">User Role</label>
+            <select id="reg-role" class="form-control">
+              <option value="user">Driver</option>
+              <option value="admin">Parking Operator</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group" id="group-password">
+          <label for="reg-password">Password</label>
+          <input type="password" id="reg-password" class="form-control" placeholder="At least 6 characters" required autocomplete="new-password">
+          <div class="validation-msg" id="err-password">Password must be at least 6 characters long</div>
+        </div>
+
+        <div class="form-group" id="group-confirm">
+          <label for="reg-confirm">Confirm Password</label>
+          <input type="password" id="reg-confirm" class="form-control" placeholder="Re-enter password" required autocomplete="new-password">
+          <div class="validation-msg" id="err-confirm">Passwords do not match</div>
+        </div>
+
+        <button class="btn btn-primary" type="submit" style="width: 100%; margin-top: 10px;">
+          Register Now <i class="fa-solid fa-user-plus"></i>
+        </button>
+      </form>
+
+      <p style="text-align: center; margin-top: 24px; font-size: 0.95rem; color: var(--text-secondary);">
+        Already have an account? <a href="/login" style="color: var(--primary-color); font-weight: 600;">Log In here</a>
+      </p>
+      
+      <p style="text-align: center; margin-top: 10px; font-size: 0.9rem;">
+        <a href="/" style="color: var(--text-secondary); text-decoration: underline;"><i class="fa-solid fa-arrow-left-long"></i> Back to Homepage</a>
+      </p>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toast-container"></div>
+
+  <script>
+    // Load and set initial theme
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    if (savedTheme === 'light') {
+      document.body.classList.add('light-theme');
+      document.getElementById('theme-btn').innerHTML = '<i class="fa-solid fa-sun"></i>';
+    } else {
+      document.body.classList.remove('light-theme');
+      document.getElementById('theme-btn').innerHTML = '<i class="fa-solid fa-moon"></i>';
+    }
+
+    // Toggle theme state
+    function toggleTheme() {
+      if (document.body.classList.contains('light-theme')) {
+        document.body.classList.remove('light-theme');
+        localStorage.setItem('theme', 'dark');
+        document.getElementById('theme-btn').innerHTML = '<i class="fa-solid fa-moon"></i>';
+      } else {
+        document.body.classList.add('light-theme');
+        localStorage.setItem('theme', 'light');
+        document.getElementById('theme-btn').innerHTML = '<i class="fa-solid fa-sun"></i>';
+      }
+    }
+
+    // Toast Utility
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = `toast toast-${type}`;
+      
+      let icon = 'fa-info-circle';
+      if (type === 'success') icon = 'fa-check-circle';
+      if (type === 'danger') icon = 'fa-exclamation-circle';
+      if (type === 'warning') icon = 'fa-exclamation-triangle';
+
+      toast.innerHTML = `
+        <i class="fa-solid ${icon}"></i>
+        <div class="toast-message">${message}</div>
+        <i class="fa-solid fa-xmark toast-close" onclick="this.parentElement.remove()"></i>
+      `;
+      container.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.remove();
+      }, 5000);
+    }
+
+    // Registration submission
+    async function handleRegistrationSubmit(e) {
+      e.preventDefault();
+      
+      // Elements
+      const nameEl = document.getElementById('reg-name');
+      const emailEl = document.getElementById('reg-email');
+      const phoneEl = document.getElementById('reg-phone');
+      const roleEl = document.getElementById('reg-role');
+      const passwordEl = document.getElementById('reg-password');
+      const confirmEl = document.getElementById('reg-confirm');
+
+      // Clear errors
+      document.querySelectorAll('.form-group').forEach(el => el.classList.remove('has-error'));
+      document.querySelectorAll('.validation-msg').forEach(el => el.style.display = 'none');
+
+      let isValid = true;
+
+      // Name validation
+      if (!nameEl.value.trim()) {
+        document.getElementById('group-name').classList.add('has-error');
+        document.getElementById('err-name').style.display = 'block';
+        isValid = false;
+      }
+
+      // Email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(emailEl.value.trim())) {
+        document.getElementById('group-email').classList.add('has-error');
+        document.getElementById('err-email').style.display = 'block';
+        isValid = false;
+      }
+
+      // Phone validation (10 digits)
+      const phoneRegex = /^[0-9]{10}$/;
+      if (!phoneRegex.test(phoneEl.value.trim())) {
+        document.getElementById('group-phone').classList.add('has-error');
+        document.getElementById('err-phone').style.display = 'block';
+        isValid = false;
+      }
+
+      // Password length validation
+      if (passwordEl.value.length < 6) {
+        document.getElementById('group-password').classList.add('has-error');
+        document.getElementById('err-password').style.display = 'block';
+        isValid = false;
+      }
+
+      // Match confirmation
+      if (passwordEl.value !== confirmEl.value) {
+        document.getElementById('group-confirm').classList.add('has-error');
+        document.getElementById('err-confirm').style.display = 'block';
+        isValid = false;
+      }
+
+      if (!isValid) return;
+
+      const payload = {
+        name: nameEl.value.trim(),
+        email: emailEl.value.trim(),
+        phone: phoneEl.value.trim(),
+        role: roleEl.value,
+        password: passwordEl.value
+      };
+
+      try {
+        const response = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          localStorage.setItem('token', data.token);
+          localStorage.setItem('user', JSON.stringify(data.user));
+          
+          showToast('✅ Account created successfully', 'success');
+          
+          setTimeout(() => {
+            window.location.href = '/dashboard';
+          }, 1500);
+        } else {
+          // Identify duplicate email / errors
+          const errorMsg = data.message || 'Registration failed.';
+          if (errorMsg.toLowerCase().includes('already exists') || errorMsg.toLowerCase().includes('duplicate')) {
+            showToast('❌ Email already registered', 'danger');
+            document.getElementById('group-email').classList.add('has-error');
+          } else {
+            showToast(`❌ ${errorMsg}`, 'danger');
+          }
+        }
+      } catch (err) {
+        console.error(err);
+        showToast('❌ Server error occurred. Please try again later.', 'danger');
+      }
+    }
+  </script>
+</body>
+</html>

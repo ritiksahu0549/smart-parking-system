@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login | ParkSmart India</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .auth-page-container {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+      position: relative;
+      background: radial-gradient(circle at 10% 80%, rgba(16, 185, 129, 0.05) 0%, transparent 40%);
+    }
+    .auth-theme-toggle {
+      position: absolute;
+      top: 30px;
+      right: 30px;
+    }
+    .auth-card {
+      width: 100%;
+      max-width: 440px;
+    }
+    .auth-header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .auth-header .logo {
+      justify-content: center;
+      margin-bottom: 12px;
+    }
+    .auth-header p {
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="auth-page-container">
+    <!-- Theme Toggle Switcher -->
+    <div class="auth-theme-toggle">
+      <button class="theme-toggle" id="theme-btn" onclick="toggleTheme()" title="Toggle Light/Dark Theme">
+        <i class="fa-solid fa-moon"></i>
+      </button>
+    </div>
+
+    <!-- Login Card -->
+    <div class="auth-card glass-card">
+      <div class="auth-header">
+        <div class="logo">
+          <i class="fa-solid fa-square-p"></i>
+          <span>ParkSmart India</span>
+        </div>
+        <h3>Welcome Back</h3>
+        <p>Login to your parking dashboard</p>
+      </div>
+
+      <form id="login-form" onsubmit="handleLoginSubmit(event)" novalidate>
+        <div class="form-group">
+          <label for="login-email">Email Address</label>
+          <input type="email" id="login-email" class="form-control" placeholder="rohan@example.com" required autocomplete="email">
+        </div>
+
+        <div class="form-group">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <label for="login-password" style="margin-bottom: 0;">Password</label>
+            <a href="#" style="font-size: 0.8rem; color: var(--primary-color);" onclick="showToast('Password reset is simulated. Click Register to create a new user.', 'warning')">Forgot Password?</a>
+          </div>
+          <input type="password" id="login-password" class="form-control" placeholder="Password" required autocomplete="current-password">
+        </div>
+
+        <button class="btn btn-primary" type="submit" style="width: 100%; margin-top: 10px;">
+          Log In <i class="fa-solid fa-right-to-bracket"></i>
+        </button>
+      </form>
+
+      <p style="text-align: center; margin-top: 24px; font-size: 0.95rem; color: var(--text-secondary);">
+        Don't have an account? <a href="/register" style="color: var(--primary-color); font-weight: 600;">Register here</a>
+      </p>
+      
+      <p style="text-align: center; margin-top: 10px; font-size: 0.9rem;">
+        <a href="/" style="color: var(--text-secondary); text-decoration: underline;"><i class="fa-solid fa-arrow-left-long"></i> Back to Homepage</a>
+      </p>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toast-container"></div>
+
+  <script>
+    // Redirect if already logged in
+    window.addEventListener('load', () => {
+      const token = localStorage.getItem('token');
+      if (token) {
+        window.location.href = '/dashboard';
+      }
+    });
+
+    // Load and set initial theme
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    if (savedTheme === 'light') {
+      document.body.classList.add('light-theme');
+      document.getElementById('theme-btn').innerHTML = '<i class="fa-solid fa-sun"></i>';
+    } else {
+      document.body.classList.remove('light-theme');
+      document.getElementById('theme-btn').innerHTML = '<i class="fa-solid fa-moon"></i>';
+    }
+
+    // Toggle theme state
+    function toggleTheme() {
+      if (document.body.classList.contains('light-theme')) {
+        document.body.classList.remove('light-theme');
+        localStorage.setItem('theme', 'dark');
+        document.getElementById('theme-btn').innerHTML = '<i class="fa-solid fa-moon"></i>';
+      } else {
+        document.body.classList.add('light-theme');
+        localStorage.setItem('theme', 'light');
+        document.getElementById('theme-btn').innerHTML = '<i class="fa-solid fa-sun"></i>';
+      }
+    }
+
+    // Toast Utility
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = `toast toast-${type}`;
+      
+      let icon = 'fa-info-circle';
+      if (type === 'success') icon = 'fa-check-circle';
+      if (type === 'danger') icon = 'fa-exclamation-circle';
+      if (type === 'warning') icon = 'fa-exclamation-triangle';
+
+      toast.innerHTML = `
+        <i class="fa-solid ${icon}"></i>
+        <div class="toast-message">${message}</div>
+        <i class="fa-solid fa-xmark toast-close" onclick="this.parentElement.remove()"></i>
+      `;
+      container.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.remove();
+      }, 5000);
+    }
+
+    // Login submission
+    async function handleLoginSubmit(e) {
+      e.preventDefault();
+      
+      const emailEl = document.getElementById('login-email');
+      const passwordEl = document.getElementById('login-password');
+
+      if (!emailEl.value.trim() || !passwordEl.value) {
+        showToast('❌ Please fill in all fields', 'warning');
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            email: emailEl.value.trim(),
+            password: passwordEl.value
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          localStorage.setItem('token', data.token);
+          localStorage.setItem('user', JSON.stringify(data.user));
+          
+          showToast('✅ Login successful! Redirecting...', 'success');
+          
+          setTimeout(() => {
+            window.location.href = '/dashboard';
+          }, 1000);
+        } else {
+          showToast(`❌ ${data.message || 'Invalid email or password'}`, 'danger');
+        }
+      } catch (err) {
+        console.error(err);
+        showToast('❌ Network error. Please verify database connection.', 'danger');
+      }
+    }
+  </script>
+</body>
+</html>
