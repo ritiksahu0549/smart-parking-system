@@ -2,6 +2,7 @@ const express = require('express');
 const http = require('http');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 const dotenv = require('dotenv');
 const connectDB = require('./config/db');
 const socketHandler = require('./socket/socketHandler');
@@ -35,8 +36,25 @@ app.use(express.json({ limit: '25mb' }));
 app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 
 // Serve Frontend Static Files & Uploads
-app.use(express.static(path.join(__dirname, '../client/dist')));
+const clientDistPath = path.join(__dirname, '../client/dist');
+if (fs.existsSync(clientDistPath)) {
+  app.use(express.static(clientDistPath));
+}
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Health Check Root Route
+app.get('/', (req, res) => {
+  const indexHtml = path.join(__dirname, '../client/dist/index.html');
+  if (fs.existsSync(indexHtml)) {
+    return res.sendFile(indexHtml);
+  }
+  return res.json({
+    status: 'success',
+    message: '🚀 Smart Parking System API is running successfully on Render!',
+    version: '1.0.0',
+    timestamp: new Date().toISOString()
+  });
+});
 
 // Mount API Routes
 app.use('/api/auth', require('./routes/authRoutes'));
@@ -49,9 +67,16 @@ app.use('/api/iot', require('./routes/iotRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/notifications', require('./routes/notificationRoutes'));
 
-// SPA Fallback: Serve React SPA index.html for all non-api routes
+// SPA Fallback: Serve React SPA index.html for non-api routes if client dist exists
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../client/dist/index.html'));
+  const indexHtml = path.join(__dirname, '../client/dist/index.html');
+  if (fs.existsSync(indexHtml)) {
+    return res.sendFile(indexHtml);
+  }
+  res.status(404).json({
+    status: 'error',
+    message: `Route '${req.originalUrl}' not found. Frontend is deployed on Vercel.`
+  });
 });
 
 // Port configuration
