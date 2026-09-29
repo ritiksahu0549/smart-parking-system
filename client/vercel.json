@@ -1,4 +1,5 @@
 {
+  "name": "smart-parking-system",
   "rewrites": [
     {
       "source": "/(.*)",
