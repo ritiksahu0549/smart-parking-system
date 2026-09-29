@@ -10,10 +10,11 @@ const { startReminderScheduler } = require('./services/reminderService');
 // Load environment variables
 dotenv.config();
 
-// Connect to MongoDB
+// Connect to MongoDB asynchronously without blocking server start
 connectDB().then(() => {
-  // Start upcoming reservation reminders worker
   startReminderScheduler();
+}).catch((err) => {
+  console.warn('MongoDB connection pending or failed. Waiting for valid MONGO_URI in environment variables.', err?.message || err);
 });
 
 const app = express();
