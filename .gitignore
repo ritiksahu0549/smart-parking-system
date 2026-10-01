@@ -10,10 +10,8 @@ client/node_modules/
 .env.*.local
 *.env
 
-# Build outputs
-dist/
+# Build outputs (kept client/dist for seamless hosting)
 build/
-client/dist/
 
 # Logs
 npm-debug.log*

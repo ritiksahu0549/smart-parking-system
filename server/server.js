@@ -37,10 +37,13 @@ app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 
 // Serve Frontend Static Files & Uploads
 const clientDistPath = path.join(__dirname, '../client/dist');
+const serverPublicPath = path.join(__dirname, 'public');
 const vanillaPath = path.join(__dirname, '../client-vanilla');
 
 if (fs.existsSync(clientDistPath)) {
   app.use(express.static(clientDistPath));
+} else if (fs.existsSync(serverPublicPath)) {
+  app.use(express.static(serverPublicPath));
 } else if (fs.existsSync(vanillaPath)) {
   app.use(express.static(vanillaPath));
 }
@@ -70,10 +73,15 @@ app.use('/api/notifications', require('./routes/notificationRoutes'));
 // Root & SPA Fallback: Serve React SPA index.html for non-api routes
 app.get('*', (req, res) => {
   const reactIndexHtml = path.join(__dirname, '../client/dist/index.html');
+  const serverPublicIndexHtml = path.join(__dirname, 'public/index.html');
+  const vanillaIndexHtml = path.join(__dirname, '../client-vanilla/index.html');
+
   if (fs.existsSync(reactIndexHtml)) {
     return res.sendFile(reactIndexHtml);
   }
-  const vanillaIndexHtml = path.join(__dirname, '../client-vanilla/index.html');
+  if (fs.existsSync(serverPublicIndexHtml)) {
+    return res.sendFile(serverPublicIndexHtml);
+  }
   if (fs.existsSync(vanillaIndexHtml)) {
     return res.sendFile(vanillaIndexHtml);
   }
