@@ -4,13 +4,22 @@ const dotenv = require('dotenv');
 const connectDB = require('../server/config/db');
 
 dotenv.config();
-connectDB();
 
 const app = express();
 
 app.use(cors());
 app.use(express.json({ limit: '25mb' }));
 app.use(express.urlencoded({ extended: true, limit: '25mb' }));
+
+// Ensure DB is connected for serverless calls
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+  } catch (err) {
+    console.error('Serverless DB connect error:', err);
+  }
+  next();
+});
 
 // Securely serve Google Maps configuration to frontend
 app.get('/api/config/maps', (req, res) => {

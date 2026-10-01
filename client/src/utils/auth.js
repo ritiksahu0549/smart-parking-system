@@ -51,13 +51,18 @@ export const auth = {
 
     try {
       const response = await window.fetch(requestUrl, config);
-      
+      const data = await response.json().catch(() => ({}));
+
       if (response.status === 401) {
+        // Do not force-logout when attempting to log in or register
+        if (url.includes('/login') || url.includes('/register')) {
+          return data;
+        }
         this.logout();
-        throw new Error('Unauthorized session. Logged out.');
+        throw new Error(data.message || 'Unauthorized session. Logged out.');
       }
       
-      return await response.json();
+      return data;
     } catch (error) {
       console.error(`API Fetch Error [${requestUrl}]:`, error);
       throw error;
