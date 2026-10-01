@@ -37,20 +37,20 @@ app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 
 // Serve Frontend Static Files & Uploads
 const clientDistPath = path.join(__dirname, '../client/dist');
+const vanillaPath = path.join(__dirname, '../client-vanilla');
+
 if (fs.existsSync(clientDistPath)) {
   app.use(express.static(clientDistPath));
+} else if (fs.existsSync(vanillaPath)) {
+  app.use(express.static(vanillaPath));
 }
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Health Check Root Route
-app.get('/', (req, res) => {
-  const indexHtml = path.join(__dirname, '../client/dist/index.html');
-  if (fs.existsSync(indexHtml)) {
-    return res.sendFile(indexHtml);
-  }
-  return res.json({
+// API Health Check Route
+app.get('/api/health', (req, res) => {
+  res.json({
     status: 'success',
-    message: '🚀 Smart Parking System API is running successfully on Render!',
+    message: '🚀 Smart Parking System API is running successfully!',
     version: '1.0.0',
     timestamp: new Date().toISOString()
   });
@@ -67,15 +67,19 @@ app.use('/api/iot', require('./routes/iotRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/notifications', require('./routes/notificationRoutes'));
 
-// SPA Fallback: Serve React SPA index.html for non-api routes if client dist exists
+// Root & SPA Fallback: Serve React SPA index.html for non-api routes
 app.get('*', (req, res) => {
-  const indexHtml = path.join(__dirname, '../client/dist/index.html');
-  if (fs.existsSync(indexHtml)) {
-    return res.sendFile(indexHtml);
+  const reactIndexHtml = path.join(__dirname, '../client/dist/index.html');
+  if (fs.existsSync(reactIndexHtml)) {
+    return res.sendFile(reactIndexHtml);
+  }
+  const vanillaIndexHtml = path.join(__dirname, '../client-vanilla/index.html');
+  if (fs.existsSync(vanillaIndexHtml)) {
+    return res.sendFile(vanillaIndexHtml);
   }
   res.status(404).json({
     status: 'error',
-    message: `Route '${req.originalUrl}' not found. Frontend is deployed on Vercel.`
+    message: `Route '${req.originalUrl}' not found. Please ensure the frontend build exists ('npm run build').`
   });
 });
 
