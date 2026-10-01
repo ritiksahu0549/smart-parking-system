@@ -1,9 +1,14 @@
+const mongoose = require('mongoose');
 const Booking = require('../models/Booking');
 const Notification = require('../models/Notification');
 const ParkingLot = require('../models/ParkingLot');
 const ParkingSlot = require('../models/ParkingSlot');
 
 const checkUpcomingBookings = async () => {
+  // If MongoDB is not connected, skip check quietly
+  if (mongoose.connection.readyState !== 1) {
+    return;
+  }
   try {
     const now = new Date();
     const thirtyMinutesLater = new Date(now.getTime() + 30 * 60 * 1000);
